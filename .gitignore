@@ -1,0 +1,11 @@
+cache/
+*.apkg
+revisar_manualmente.csv
+__pycache__/
+*.pyc
+.venv/
+
+# arquivos de entrada do usuário: fica versionado só o exemplo
+palavras/*
+!palavras/exemplo.txt
+palavras/processadas.json
