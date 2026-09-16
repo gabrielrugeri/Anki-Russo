@@ -15,6 +15,15 @@ _POS_ADJ = {"ADJF", "ADJS", "COMP"}
 _GENDER_MAP = {"masc": "masc", "femn": "femn", "neut": "neut"}
 _ASPECT_MAP = {"perf": "perf", "impf": "impf"}
 
+# Correções manuais pra casos em que o pymorphy3/OpenCorpora empata a pontuação
+# entre duas leituras de palavras quase homógrafas e o parse[0] (mais provável)
+# escolhido por padrão cai no lema errado pro sentido comum da palavra.
+# Ex: "воскресенье" (domingo) empata com a leitura "NOUN,V-be" que aponta pro
+# lema "воскресение" (ressurreição) — descoberto testando com dado real.
+_LEMMA_OVERRIDES = {
+    "воскресенье": "воскресенье",
+}
+
 
 @dataclass
 class MorphInfo:
@@ -48,9 +57,11 @@ def analyze(word: str) -> MorphInfo:
     gender = _GENDER_MAP.get(tag.gender) if pos == "NOUN" else None
     aspect = _ASPECT_MAP.get(tag.aspect) if pos == "VERB" else None
 
+    lemma = _LEMMA_OVERRIDES.get(word.lower(), best.normal_form)
+
     return MorphInfo(
         input_word=word,
-        lemma=best.normal_form,
+        lemma=lemma,
         pos_raw=pos_raw,
         pos=pos,
         gender=gender,
