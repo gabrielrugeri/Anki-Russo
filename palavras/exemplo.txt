@@ -1,34 +1,6 @@
-# Lista de teste: ~30 palavras/expressões do dia a dia (formas variadas, não só dicionário)
-работать
-работа
-магазины
-купил
-дорого
-дешёвый
-девушка
-друзья
-говорил
-сказать
-читаю
+# Exemplo de formato: uma palavra/expressão por linha, em qualquer forma
+# gramatical (não precisa ser o dicionário/nominativo). Linhas com # são ignoradas.
+говорить
 книга
 интересный
-быстро
-вчера
-сегодня
-завтра
-хочу
-можно
-нужно
-погода
-холодно
-тепло
-идти
-пришёл
-встреча
-друг
-подруга
-деньги
-спасибо
-извините
-как дела
 до свидания
