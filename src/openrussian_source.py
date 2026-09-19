@@ -33,6 +33,7 @@ class OpenRussianEntry:
     gender: Optional[str] = None
     aspect: Optional[str] = None
     aspect_partner: Optional[str] = None
+    plural_only: bool = False
 
 
 def stress_mark(accented: str) -> str:
@@ -120,6 +121,7 @@ class OpenRussianIndex:
                 )
                 if pos == "NOUN":
                     entry.gender = _GENDER_MAP.get((row.get("gender") or "").strip())
+                    entry.plural_only = (row.get("pl_only") or "").strip() == "1"
                 if pos == "VERB":
                     entry.aspect = _ASPECT_MAP.get((row.get("aspect") or "").strip())
                     partner = (row.get("partner") or "").strip()

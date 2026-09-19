@@ -79,7 +79,12 @@ class Resolver:
         # fontes externas indexam pela forma "деньги")
         lookup_candidates = [record.lemma]
         if word != record.lemma:
-            lookup_candidates.append(word)
+            plural_entry = self.openrussian.lookup(word, pos_hint)
+            if plural_entry and plural_entry.plural_only:
+                # plurale tantum (ex.: "родители"): a forma digitada é o lema real
+                lookup_candidates.insert(0, word)
+            else:
+                lookup_candidates.append(word)
 
         # OpenRussian é checado antes do kaikki para tradução/gênero/aspecto/par:
         # é um dicionário curado com uma entrada por lema, enquanto o kaikki tem
