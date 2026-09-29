@@ -5,10 +5,12 @@ Fluxo principal do projeto usa `note_fields()` direto com o AnkiConnect
 (src/anki_connect.py); a geração de .apkg aqui é só pro comando manual
 `--export-apkg`.
 
-Lado 1 (Frente): palavra com tônica sublinhada + frase de exemplo (sem tradução),
+Lado 1 (Frente): palavra com tônica marcada por acento agudo (´) + frase de exemplo (sem tradução),
 com a palavra-alvo em negrito dentro da frase quando um match exato é encontrado.
-Lado 2 (Verso): aspecto+par (verbo) ou gênero (substantivo) em negrito colorido,
-tradução da palavra, e tradução da frase de exemplo.
+Lado 2 (Verso): aspecto+par (verbo) ou gênero (substantivo) em negrito colorido;
+tipo de movimento (verbos de movimento, dimensão à parte do aspecto) em cor própria;
+tradução da palavra; forma curta de adjetivo e aviso de substantivo indeclinável
+quando aplicável (best-effort, linhas opcionais); e tradução da frase de exemplo.
 """
 from __future__ import annotations
 
@@ -27,6 +29,7 @@ _ASPECT_LABEL = {"perf": "perfectivo", "impf": "imperfectivo"}
 _ASPECT_COLOR = {"perf": "#2e7d32", "impf": "#1565c0"}  # perfectivo=verde, imperfectivo=azul
 _GENDER_LETTER = {"masc": "М", "femn": "Ж", "neut": "С"}
 _GENDER_COLOR = {"masc": "#1565c0", "femn": "#c62828", "neut": "#6a1b9a"}  # azul/vermelho/roxo
+_MOVEMENT_COLOR = "#e65100"  # laranja escuro — dimensão à parte de aspecto/gênero, cor própria
 
 _COMBINING_ACCENTS = "́̀"  # combining acute/grave: marca de tônica usada nos exemplos do kaikki
 
@@ -46,13 +49,13 @@ MODEL = genanki.Model(
 
 
 def _stress_html(stress: str) -> str:
-    """Converte a marca de tônica em maiúscula (ex: 'купИть') para <u> em volta
-    da vogal tônica, em minúscula (ex: 'куп<u>и</u>ть')."""
+    """Converte a marca de tônica em maiúscula (ex: 'купИть') para a vogal em
+    minúscula seguida do acento agudo combinante (ex: 'купи́ть')."""
     match = re.search(r"[А-ЯЁ]", stress)
     if not match:
         return stress
     idx = match.start()
-    return stress[:idx] + f"<u>{stress[idx].lower()}</u>" + stress[idx + 1:]
+    return stress[:idx] + stress[idx].lower() + "́" + stress[idx + 1:]
 
 
 def _strip_accents(text: str) -> str:
@@ -126,7 +129,7 @@ def note_fields(record: WordRecord) -> tuple[str, str]:
 
     Reutilizado tanto pelo Note do genanki (export pontual em .apkg) quanto
     pelo upload direto via AnkiConnect, pra não duplicar a lógica de
-    formatação (tônica sublinhada, negrito na frase, cores) em dois lugares.
+    formatação (tônica com acento, negrito na frase, cores) em dois lugares.
     """
     word_html = _stress_html(record.stress) if record.stress else (record.lemma or record.input_word)
     front_lines = [f'<span style="font-size:1.4em">{word_html}</span>']
@@ -139,9 +142,17 @@ def note_fields(record: WordRecord) -> tuple[str, str]:
     grammar = _grammar_line(record)
     if grammar:
         back_lines.append(grammar)
+    if record.movement_type:
+        # dimensão independente do aspecto (os dois verbos do par são imperfectivos),
+        # por isso linha e cor própria em vez de entrar na _grammar_line
+        back_lines.append(f'<b style="color:{_MOVEMENT_COLOR}">{record.movement_type}</b>')
     translation = _translation_line(record)
     if translation:
         back_lines.append(translation)
+    if record.short_form:
+        back_lines.append(f"forma curta: {record.short_form}")
+    if record.indeclinable:
+        back_lines.append("não declina")
     if record.example_ru and record.example_translation:
         back_lines.append(record.example_translation.replace("\n", "<br>"))
 

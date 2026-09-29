@@ -1,4 +1,6 @@
-"""Análise morfológica via pymorphy3: lema, POS, gênero (substantivos), aspecto (verbos)."""
+"""Análise morfológica via pymorphy3: lema, POS, gênero (substantivos), aspecto (verbos),
+tipo de movimento (verbos de movimento), forma curta (adjetivos) e indeclinabilidade (substantivos).
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,6 +26,22 @@ _LEMMA_OVERRIDES = {
     "воскресенье": "воскресенье",
 }
 
+# Pares unidirecional/multidirecional dos verbos de movimento mais comuns.
+# É uma dimensão independente do aspecto (perfectivo/imperfectivo) — os dois
+# verbos de cada par são imperfectivos, mas um descreve movimento numa
+# direção só (unidirecional) e o outro movimento repetido/sem direção fixa
+# (multidirecional).
+_MOVEMENT_VERBS = {
+    "идти": "unidirecional", "ходить": "multidirecional",
+    "ехать": "unidirecional", "ездить": "multidirecional",
+    "бежать": "unidirecional", "бегать": "multidirecional",
+    "лететь": "unidirecional", "летать": "multidirecional",
+    "плыть": "unidirecional", "плавать": "multidirecional",
+    "нести": "unidirecional", "носить": "multidirecional",
+    "вести": "unidirecional", "водить": "multidirecional",
+    "везти": "unidirecional", "возить": "multidirecional",
+}
+
 
 @dataclass
 class MorphInfo:
@@ -33,6 +51,9 @@ class MorphInfo:
     pos: str  # "VERB" | "NOUN" | "ADJ" | "OTHER"
     gender: Optional[str] = None
     aspect: Optional[str] = None
+    movement_type: Optional[str] = None  # "unidirecional" | "multidirecional"
+    short_form: Optional[str] = None  # forma curta masculina de adjetivo (best-effort)
+    indeclinable: bool = False
 
 
 def analyze(word: str) -> MorphInfo:
@@ -59,6 +80,16 @@ def analyze(word: str) -> MorphInfo:
 
     lemma = _LEMMA_OVERRIDES.get(word.lower(), best.normal_form)
 
+    movement_type = _MOVEMENT_VERBS.get(lemma) if pos == "VERB" else None
+
+    short_form = None
+    if pos_raw == "ADJF":
+        inflected = best.inflect({"ADJS", "masc", "sing"})
+        if inflected and inflected.word != best.word:
+            short_form = inflected.word
+
+    indeclinable = pos == "NOUN" and "Fixd" in tag
+
     return MorphInfo(
         input_word=word,
         lemma=lemma,
@@ -66,4 +97,7 @@ def analyze(word: str) -> MorphInfo:
         pos=pos,
         gender=gender,
         aspect=aspect,
+        movement_type=movement_type,
+        short_form=short_form,
+        indeclinable=indeclinable,
     )

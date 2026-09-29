@@ -34,6 +34,9 @@ class WordRecord:
     aspect: Optional[str] = None
     aspect_partner: Optional[str] = None
     case_government: Optional[str] = None
+    movement_type: Optional[str] = None  # "unidirecional" | "multidirecional" (verbos de movimento)
+    short_form: Optional[str] = None  # forma curta masculina de adjetivo (best-effort)
+    indeclinable: bool = False  # substantivo indeclinável (ex.: пальто, кофе)
 
     stress: Optional[str] = None
     example_ru: Optional[str] = None
@@ -67,6 +70,9 @@ class Resolver:
         record = WordRecord(input_word=word, lemma=morph.lemma, pos=morph.pos)
         record.gender = morph.gender
         record.aspect = morph.aspect
+        record.movement_type = morph.movement_type
+        record.short_form = morph.short_form
+        record.indeclinable = morph.indeclinable
         if morph.gender:
             record.sources["gender"] = "pymorphy3"
         if morph.aspect:
