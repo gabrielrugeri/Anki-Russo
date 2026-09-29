@@ -7,9 +7,12 @@ existente.
 """
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 ANKI_CONNECT_URL = "http://localhost:8765"
 ANKI_CONNECT_VERSION = 6
@@ -21,7 +24,11 @@ class AnkiConnectError(RuntimeError):
     """Anki não está acessível via AnkiConnect, ou a API retornou um erro."""
 
 
-def _invoke(action: str, **params):
+def _invoke_raw(action: str, **params) -> dict:
+    """Chama o AnkiConnect e devolve {"result":..., "error":...} sem levantar
+    em cima de um erro de nível de ação (ex: nota duplicada) — só uma falha de
+    conexão (Anki fechado) é fatal aqui. Usado quando o chamador precisa
+    tratar o erro por item em vez de tudo-ou-nada."""
     payload = {"action": action, "version": ANKI_CONNECT_VERSION}
     if params:
         payload["params"] = params
@@ -33,8 +40,11 @@ def _invoke(action: str, **params):
             f"Não foi possível conectar ao AnkiConnect em {ANKI_CONNECT_URL}. "
             "Abra o Anki com o addon AnkiConnect instalado e rode novamente."
         ) from exc
+    return resp.json()
 
-    data = resp.json()
+
+def _invoke(action: str, **params):
+    data = _invoke_raw(action, **params)
     if data.get("error") is not None:
         raise AnkiConnectError(f"AnkiConnect retornou erro em '{action}': {data['error']}")
     return data.get("result")
@@ -109,11 +119,22 @@ def add_notes(
 
     can_add = _invoke("canAddNotes", notes=notes)
 
+    # Adiciona uma nota de cada vez em vez de um `addNotes` em lote: o
+    # `addNotes` do AnkiConnect é tudo-ou-nada — se UMA nota do lote falhar
+    # (ex: duas notas novas resolvendo pro mesmo lema na mesma execução,
+    # que o `canAddNotes` não pega porque só compara com o que já existe na
+    # coleção, não com as outras notas do próprio lote), a chamada inteira
+    # falha e nenhuma nota é criada. Nota por nota, um problema isolado não
+    # derruba as outras.
     results: list[Optional[int]] = [None] * len(notes)
-    addable_indexes = [i for i, ok in enumerate(can_add) if ok]
-    if addable_indexes:
-        added_ids = _invoke("addNotes", notes=[notes[i] for i in addable_indexes])
-        for idx, note_id in zip(addable_indexes, added_ids):
-            results[idx] = note_id
+    for i, (note, addable) in enumerate(zip(notes, can_add)):
+        if not addable:
+            continue
+        data = _invoke_raw("addNote", note=note)
+        if data.get("error") is not None:
+            if "duplicate" not in str(data["error"]).lower():
+                logger.warning("Não foi possível adicionar a nota '%s': %s", note["fields"].get("Frente", "?")[:60], data["error"])
+            continue
+        results[i] = data.get("result")
 
     return results

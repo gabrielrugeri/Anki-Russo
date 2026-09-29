@@ -93,15 +93,22 @@ def run_anki_connect(args: argparse.Namespace) -> None:
     already_processed: list[WordRecord] = []
     unresolved: list[WordRecord] = []
     to_upload: list[WordRecord] = []
+    queued_lemmas: set[str] = set()
 
     for word in words:
         record = resolver.resolve(word)
         if not record.resolved:
             unresolved.append(record)
             continue
-        if record.lemma in manifest:
+        # já processada antes (manifest) OU duas entradas diferentes desta
+        # mesma leitura resolveram pro mesmo lema (ex.: uma forma flexionada e
+        # o dicionário na mesma lista) — nos dois casos, não manda de novo.
+        # Sem isso o mesmo Frente/Verso ia duas vezes no mesmo lote pro
+        # AnkiConnect, que rejeita com erro em vez de só pular a segunda.
+        if record.lemma in manifest or record.lemma in queued_lemmas:
             already_processed.append(record)
             continue
+        queued_lemmas.add(record.lemma)
         to_upload.append(record)
 
     sent = 0
