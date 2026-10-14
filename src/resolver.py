@@ -112,10 +112,14 @@ class Resolver:
         if or_entry:
             record.stress = stress_mark(or_entry.accented)
             record.sources["stress"] = "openrussian_csv"
-            if not record.gender and or_entry.gender:
+            # gênero/aspecto do verbete curado (que bateu com o lema final) têm
+            # prioridade sobre os do pymorphy3, que vêm do parse da palavra
+            # digitada e erram quando o parse escolhido é de outro lexema
+            # (ex.: "душ" lido como genitivo plural de "душа" -> gênero feminino)
+            if or_entry.gender:
                 record.gender = or_entry.gender
                 record.sources["gender"] = "openrussian_csv"
-            if not record.aspect and or_entry.aspect:
+            if or_entry.aspect:
                 record.aspect = or_entry.aspect
                 record.sources["aspect"] = "openrussian_csv"
             if or_entry.aspect_partner:
