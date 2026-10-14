@@ -84,13 +84,16 @@ class Resolver:
         # (cobre casos como pluralia tantum, ex. "деньги" -> lema "деньга", mas as
         # fontes externas indexam pela forma "деньги")
         lookup_candidates = [record.lemma]
-        if word != record.lemma:
-            plural_entry = self.openrussian.lookup(word, pos_hint)
-            if plural_entry and plural_entry.plural_only:
-                # plurale tantum (ex.: "родители"): a forma digitada é o lema real
-                lookup_candidates.insert(0, word)
+        typed = word.lower()
+        if typed != record.lemma:
+            typed_entry = self.openrussian.lookup(typed, pos_hint)
+            if typed_entry and (pos_hint is None or typed_entry.pos == pos_hint):
+                # a forma digitada é verbete próprio do dicionário (plurale tantum como
+                # "родители", ou plural lexicalizado como "наушники" = fones de ouvido,
+                # que o pymorphy3 reduziria a "наушник" = delator): ela é o lema real
+                lookup_candidates.insert(0, typed)
             else:
-                lookup_candidates.append(word)
+                lookup_candidates.append(typed)
 
         # OpenRussian é checado antes do kaikki para tradução/gênero/aspecto/par:
         # é um dicionário curado com uma entrada por lema, enquanto o kaikki tem
