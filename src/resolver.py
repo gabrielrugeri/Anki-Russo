@@ -112,9 +112,11 @@ class Resolver:
                     record.lemma = candidate  # a forma que realmente bateu na fonte é a mais confiável
                 break
         if or_entry:
-            if or_entry.pos != record.pos:
+            if pos_hint is not None and or_entry.pos != record.pos:
                 # a classe do verbete curado vence a do pymorphy3 (ex.: "примерочная" é
-                # substantivo no dicionário, mas o pymorphy3 lê como adjetivo)
+                # substantivo no dicionário, mas o pymorphy3 lê como adjetivo). Só vale
+                # quando o pymorphy3 deu uma classe de conteúdo: com "OTHER" a busca não
+                # é guiada por classe e o verbete achado pode ser de outra (ex.: "ничего").
                 record.pos = or_entry.pos
                 record.gender = record.aspect = record.short_form = record.movement_type = None
                 record.indeclinable = False
