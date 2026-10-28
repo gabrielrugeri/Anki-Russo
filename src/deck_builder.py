@@ -107,6 +107,11 @@ def _grammar_line(record: WordRecord) -> str:
         if record.aspect_partner:
             line += f" (par: {record.aspect_partner})"
         return line
+    if record.pos == "NOUN" and record.gender == "both":
+        return (
+            f'<b style="color:{_GENDER_COLOR["masc"]}">М</b>/'
+            f'<b style="color:{_GENDER_COLOR["femn"]}">Ж</b>'
+        )
     if record.pos == "NOUN" and record.gender:
         letter = _GENDER_LETTER.get(record.gender)
         color = _GENDER_COLOR.get(record.gender)
@@ -153,6 +158,8 @@ def note_fields(record: WordRecord) -> tuple[str, str]:
         back_lines.append(f"forma curta: {record.short_form}")
     if record.indeclinable:
         back_lines.append("não declina")
+    if record.plural_only:
+        back_lines.append("só plural")
     if record.example_ru and record.example_translation:
         back_lines.append(record.example_translation.replace("\n", "<br>"))
 

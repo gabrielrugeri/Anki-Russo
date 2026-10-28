@@ -54,6 +54,7 @@ class MorphInfo:
     movement_type: Optional[str] = None  # "unidirecional" | "multidirecional"
     short_form: Optional[str] = None  # forma curta masculina de adjetivo (best-effort)
     indeclinable: bool = False
+    plural_only: bool = False  # pluralia tantum (ex.: брюки, часы) — sem gênero gramatical
 
 
 def analyze(word: str) -> MorphInfo:
@@ -89,6 +90,7 @@ def analyze(word: str) -> MorphInfo:
             short_form = inflected.word
 
     indeclinable = pos == "NOUN" and "Fixd" in tag
+    plural_only = pos == "NOUN" and "Pltm" in tag
 
     return MorphInfo(
         input_word=word,
@@ -100,4 +102,5 @@ def analyze(word: str) -> MorphInfo:
         movement_type=movement_type,
         short_form=short_form,
         indeclinable=indeclinable,
+        plural_only=plural_only,
     )

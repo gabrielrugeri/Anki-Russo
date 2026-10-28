@@ -37,6 +37,7 @@ class WordRecord:
     movement_type: Optional[str] = None  # "unidirecional" | "multidirecional" (verbos de movimento)
     short_form: Optional[str] = None  # forma curta masculina de adjetivo (best-effort)
     indeclinable: bool = False  # substantivo indeclinável (ex.: пальто, кофе)
+    plural_only: bool = False  # só plural (ex.: брюки): não tem gênero, então ele não é exigido
 
     stress: Optional[str] = None
     example_ru: Optional[str] = None
@@ -73,6 +74,7 @@ class Resolver:
         record.movement_type = morph.movement_type
         record.short_form = morph.short_form
         record.indeclinable = morph.indeclinable
+        record.plural_only = morph.plural_only
         if morph.gender:
             record.sources["gender"] = "pymorphy3"
         if morph.aspect:
@@ -87,7 +89,7 @@ class Resolver:
         typed = word.lower()
         if typed != record.lemma:
             typed_entry = self.openrussian.lookup(typed, pos_hint)
-            if typed_entry and (pos_hint is None or typed_entry.pos == pos_hint):
+            if typed_entry:
                 # a forma digitada é verbete próprio do dicionário (plurale tantum como
                 # "родители", ou plural lexicalizado como "наушники" = fones de ouvido,
                 # que o pymorphy3 reduziria a "наушник" = delator): ela é o lema real
@@ -110,8 +112,16 @@ class Resolver:
                     record.lemma = candidate  # a forma que realmente bateu na fonte é a mais confiável
                 break
         if or_entry:
+            if or_entry.pos != record.pos:
+                # a classe do verbete curado vence a do pymorphy3 (ex.: "примерочная" é
+                # substantivo no dicionário, mas o pymorphy3 lê como adjetivo)
+                record.pos = or_entry.pos
+                record.gender = record.aspect = record.short_form = record.movement_type = None
+                record.indeclinable = False
             record.stress = stress_mark(or_entry.accented)
             record.sources["stress"] = "openrussian_csv"
+            if or_entry.plural_only:
+                record.plural_only = True
             # gênero/aspecto do verbete curado (que bateu com o lema final) têm
             # prioridade sobre os do pymorphy3, que vêm do parse da palavra
             # digitada e erram quando o parse escolhido é de outro lexema
@@ -190,7 +200,7 @@ class Resolver:
         missing = []
         if not record.translation:
             missing.append("tradução")
-        if record.pos == "NOUN" and not record.gender:
+        if record.pos == "NOUN" and not record.gender and not record.plural_only:
             missing.append("gênero")
         if record.pos == "VERB" and not record.aspect:
             missing.append("aspecto")

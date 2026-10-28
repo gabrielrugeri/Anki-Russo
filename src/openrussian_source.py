@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
 BASE_URL = "https://raw.githubusercontent.com/Badestrand/russian-dictionary/master/{name}.csv"
 
-_GENDER_MAP = {"m": "masc", "f": "femn", "n": "neut"}
+_GENDER_MAP = {"m": "masc", "f": "femn", "n": "neut", "both": "both"}  # both = gênero comum (м/ж), ex: коллега
 _ASPECT_MAP = {"perfective": "perf", "imperfective": "impf"}
 
 
