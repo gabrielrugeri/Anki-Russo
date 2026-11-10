@@ -100,6 +100,14 @@ def _bold_word_in_example(example: str, lemma: str) -> str:
 
 
 def _grammar_line(record: WordRecord) -> str:
+    if record.pos == "VERB" and record.aspect == "both":
+        line = (
+            f'<b style="color:{_ASPECT_COLOR["impf"]}">imperfectivo</b>/'
+            f'<b style="color:{_ASPECT_COLOR["perf"]}">perfectivo</b>'
+        )
+        if record.aspect_partner:
+            line += f" (par: {record.aspect_partner})"
+        return line
     if record.pos == "VERB" and record.aspect:
         label = _ASPECT_LABEL.get(record.aspect, record.aspect)
         color = _ASPECT_COLOR.get(record.aspect, "#000000")
