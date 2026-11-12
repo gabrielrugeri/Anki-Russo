@@ -124,10 +124,15 @@ class OpenRussianIndex:
                     entry.plural_only = (row.get("pl_only") or "").strip() == "1"
                 if pos == "VERB":
                     entry.aspect = _ASPECT_MAP.get((row.get("aspect") or "").strip())
-                    partner = (row.get("partner") or "").strip()
-                    entry.aspect_partner = partner if partner and partner != "-" else None
+                    # o par vem com marcas de acento ("просыпа'ться") e pode listar o
+                    # próprio verbo (homógrafo com outro sentido): limpa ambos
+                    partners = [p.replace("'", "") for p in (row.get("partner") or "").split(";")]
+                    partners = [p.strip() for p in partners if p.strip() and p.strip() not in ("-", bare)]
+                    entry.aspect_partner = ";".join(partners) or None
 
-                self._by_pos[pos][bare] = entry
+                # o CSV tem homógrafos com a mesma forma (ex.: просыпаться = acordar / derramar-se);
+                # a primeira linha é a principal (o dicionário vem ordenado por relevância)
+                self._by_pos[pos].setdefault(bare, entry)
                 alt = bare.replace("ё", "е")  # texto real costuma vir sem о trema
                 if alt != bare:
                     self._by_pos[pos].setdefault(alt, entry)
